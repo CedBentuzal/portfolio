@@ -3,6 +3,7 @@ import { v2 as cloudinary } from "cloudinary"
 const cloudName = process.env.CLOUDINARY_CLOUD_NAME
 const apiKey = process.env.CLOUDINARY_API_KEY
 const apiSecret = process.env.CLOUDINARY_API_SECRET
+const allowedOrigin = process.env.FRONTEND_ORIGIN || "*"
 
 const listResources = async (resourceType) => {
   return cloudinary.api.resources({
@@ -24,6 +25,15 @@ const mapResource = (resource) => {
 }
 
 export default async function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin)
+  res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end()
+    return
+  }
+
   if (!cloudName || !apiKey || !apiSecret) {
     res.status(500).json({ error: "Cloudinary config missing" })
     return

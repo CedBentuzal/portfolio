@@ -1,5 +1,6 @@
 const adminEmail = process.env.ADMIN_EMAIL
 const adminPassword = process.env.ADMIN_PASSWORD
+const allowedOrigin = process.env.FRONTEND_ORIGIN || "*"
 
 const parseBody = (req) => {
   if (!req.body) return {}
@@ -14,6 +15,15 @@ const parseBody = (req) => {
 }
 
 export default function handler(req, res) {
+  res.setHeader("Access-Control-Allow-Origin", allowedOrigin)
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+
+  if (req.method === "OPTIONS") {
+    res.status(204).end()
+    return
+  }
+
   if (req.method !== "POST") {
     res.status(405).json({ error: "Method not allowed" })
     return
