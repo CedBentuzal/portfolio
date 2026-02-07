@@ -44,7 +44,7 @@ export default function handler(req, res) {
     return
   }
 
-  const { email, password, folder } = parseBody(req)
+  const { email, password, folder, publicId } = parseBody(req)
 
   if (email !== adminEmail || password !== adminPassword) {
     res.status(401).json({ error: "Unauthorized" })
@@ -53,8 +53,9 @@ export default function handler(req, res) {
 
   const timestamp = Math.floor(Date.now() / 1000)
   const uploadFolder = folder || "portfolio"
+  const uploadPublicId = publicId || undefined
   const signature = cloudinary.utils.api_sign_request(
-    { timestamp, folder: uploadFolder },
+    { timestamp, folder: uploadFolder, public_id: uploadPublicId },
     apiSecret
   )
 
