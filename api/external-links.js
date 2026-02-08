@@ -78,7 +78,8 @@ export default async function handler(req, res) {
     return
   }
 
-  const { email, password, action, id, title, url, category, kind, thumbnailUrl } = parseBody(req)
+  const { email, password, action, id, title, url, category, kind, thumbnailUrl, setFeatured } =
+    parseBody(req)
 
   if (email !== adminEmail || password !== adminPassword) {
     res.status(401).json({ error: "Unauthorized" })
@@ -97,6 +98,31 @@ export default async function handler(req, res) {
       return
     }
 
+    if (action === "feature") {
+      const normalizedCategory = normalizeCategory(category)
+      const shouldFeature = Boolean(setFeatured)
+
+      if (shouldFeature && !id) {
+        res.status(400).json({ error: "id is required to set a featured link" })
+        return
+      }
+
+      const snapshot = await db
+        .collection("externalLinks")
+        .where("category", "==", normalizedCategory)
+        .get()
+
+      const updates = []
+      snapshot.forEach((doc) => {
+        const nextFeatured = shouldFeature && doc.id === id
+        updates.push(doc.ref.update({ isFeatured: nextFeatured }))
+      })
+
+      await Promise.all(updates)
+      res.status(200).json({ ok: true })
+      return
+    }
+
     if (!url) {
       res.status(400).json({ error: "url is required" })
       return
@@ -111,6 +137,7 @@ export default async function handler(req, res) {
       category: normalizeCategory(category),
       kind: normalizeKind(kind),
       createdAt: Date.now(),
+      isFeatured: false,
     }
 
     if (trimmedThumbnailUrl) {
