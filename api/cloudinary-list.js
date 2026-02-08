@@ -5,6 +5,24 @@ const apiKey = process.env.CLOUDINARY_API_KEY
 const apiSecret = process.env.CLOUDINARY_API_SECRET
 const allowedOrigin = process.env.FRONTEND_ORIGIN || "*"
 
+const getAllowedOrigin = (req) => {
+  const allowed = allowedOrigin
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean)
+  const requestOrigin = req.headers?.origin
+
+  if (allowed.includes("*")) {
+    return "*"
+  }
+
+  if (requestOrigin && allowed.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return allowed[0] || "*"
+}
+
 const listResources = async (resourceType) => {
   return cloudinary.api.resources({
     type: "upload",
@@ -20,14 +38,16 @@ const mapResource = (resource) => {
     src: resource.secure_url,
     type: resource.resource_type === "video" ? "video" : "image",
     name,
+    publicId: resource.public_id,
     created_at: resource.created_at,
   }
 }
 
 export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", allowedOrigin)
+  res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin(req))
   res.setHeader("Access-Control-Allow-Methods", "GET, OPTIONS")
   res.setHeader("Access-Control-Allow-Headers", "Content-Type")
+  res.setHeader("Vary", "Origin")
 
   if (req.method === "OPTIONS") {
     res.status(204).end()
