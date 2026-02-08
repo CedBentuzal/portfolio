@@ -78,7 +78,7 @@ export default async function handler(req, res) {
     return
   }
 
-  const { email, password, action, id, title, url, category, kind } = parseBody(req)
+  const { email, password, action, id, title, url, category, kind, thumbnailUrl } = parseBody(req)
 
   if (email !== adminEmail || password !== adminPassword) {
     res.status(401).json({ error: "Unauthorized" })
@@ -102,12 +102,19 @@ export default async function handler(req, res) {
       return
     }
 
+    const trimmedThumbnailUrl =
+      typeof thumbnailUrl === "string" ? thumbnailUrl.trim() : ""
+
     const payload = {
       title: title || url,
       url,
       category: normalizeCategory(category),
       kind: normalizeKind(kind),
       createdAt: Date.now(),
+    }
+
+    if (trimmedThumbnailUrl) {
+      payload.thumbnailUrl = trimmedThumbnailUrl
     }
 
     const doc = await db.collection("externalLinks").add(payload)
