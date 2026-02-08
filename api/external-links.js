@@ -40,7 +40,7 @@ const normalizeCategory = (value) => {
 }
 
 const normalizeKind = (value) => {
-  const allowed = ["youtube", "vimeo", "video", "image"]
+  const allowed = ["youtube", "vimeo", "video", "image", "behance"]
   return allowed.includes(value) ? value : "video"
 }
 
