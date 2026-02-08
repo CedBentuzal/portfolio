@@ -3,6 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "cloudinary": "^2.6.0"
+    "cloudinary": "^2.6.0",
+    "firebase-admin": "^12.1.0"
   }
 }
