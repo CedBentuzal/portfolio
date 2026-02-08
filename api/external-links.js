@@ -35,7 +35,7 @@ const parseBody = (req) => {
 }
 
 const normalizeCategory = (value) => {
-  const allowed = ["motion-saas", "shorts", "static-visuals"]
+  const allowed = ["motion-saas", "shorts", "static-visuals", "brand"]
   return allowed.includes(value) ? value : "motion-saas"
 }
 
