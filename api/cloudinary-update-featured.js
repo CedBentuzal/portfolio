@@ -91,7 +91,7 @@ export default async function handler(req, res) {
     return
   }
 
-  const { email, password, category, publicId } = parseBody(req)
+  const { email, password, category, publicId, resourceType } = parseBody(req)
 
   if (email !== adminEmail || password !== adminPassword) {
     res.status(401).json({ error: "Unauthorized" })
@@ -119,6 +119,26 @@ export default async function handler(req, res) {
     : folderPrefix
   const targetId = buildPublicId(prefix, category, true, meta.restName)
 
+  const renameWithType = async (fromId, toId, type) => {
+    return cloudinary.uploader.rename(fromId, toId, {
+      overwrite: true,
+      invalidate: true,
+      resource_type: type,
+    })
+  }
+
+  const renameWithFallback = async (fromId, toId) => {
+    if (resourceType === "video" || resourceType === "image") {
+      return renameWithType(fromId, toId, resourceType)
+    }
+
+    try {
+      return await renameWithType(fromId, toId, "video")
+    } catch (error) {
+      return renameWithType(fromId, toId, "image")
+    }
+  }
+
   try {
     const list = await cloudinary.api.resources({
       type: "upload",
@@ -140,22 +160,12 @@ export default async function handler(req, res) {
           ? resource.public_id.split("/").slice(0, -1).join("/")
           : folderPrefix
         const nextId = buildPublicId(resourcePrefix, category, false, resourceMeta.restName)
-        updates.push(
-          cloudinary.uploader.rename(resource.public_id, nextId, {
-            overwrite: true,
-            invalidate: true,
-          })
-        )
+        updates.push(renameWithFallback(resource.public_id, nextId))
       }
     })
 
     if (normalizedPublicId !== targetId) {
-      updates.push(
-        cloudinary.uploader.rename(normalizedPublicId, targetId, {
-          overwrite: true,
-          invalidate: true,
-        })
-      )
+      updates.push(renameWithFallback(normalizedPublicId, targetId))
     }
 
     await Promise.all(updates)
