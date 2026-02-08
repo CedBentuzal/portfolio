@@ -65,6 +65,15 @@ const buildPublicId = (prefix, category, featured, restName) => {
   return `${normalizedPrefix}${category}__${featuredFlag}__${restName}`
 }
 
+const listResources = async (resourceType, folderPrefix) => {
+  return cloudinary.api.resources({
+    type: "upload",
+    resource_type: resourceType,
+    prefix: `${folderPrefix}/`,
+    max_results: 500,
+  })
+}
+
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", getAllowedOrigin(req))
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS")
@@ -140,13 +149,15 @@ export default async function handler(req, res) {
   }
 
   try {
-    const list = await cloudinary.api.resources({
-      type: "upload",
-      prefix: `${folderPrefix}/`,
-      max_results: 500,
-    })
+    const [imageList, videoList] = await Promise.all([
+      listResources("image", folderPrefix),
+      listResources("video", folderPrefix),
+    ])
 
-    const resources = Array.isArray(list.resources) ? list.resources : []
+    const resources = [
+      ...(Array.isArray(imageList.resources) ? imageList.resources : []),
+      ...(Array.isArray(videoList.resources) ? videoList.resources : []),
+    ]
     const updates = []
 
     resources.forEach((resource) => {
@@ -160,7 +171,8 @@ export default async function handler(req, res) {
           ? resource.public_id.split("/").slice(0, -1).join("/")
           : folderPrefix
         const nextId = buildPublicId(resourcePrefix, category, false, resourceMeta.restName)
-        updates.push(renameWithFallback(resource.public_id, nextId))
+        const resolvedType = resource.resource_type === "video" ? "video" : "image"
+        updates.push(renameWithType(resource.public_id, nextId, resolvedType))
       }
     })
 
